@@ -24,7 +24,10 @@ const register = async (req, res) => {
       });
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    // const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    })
     if (existingUser) {
       return res.status(409).json({
         success: false,
@@ -57,47 +60,6 @@ const register = async (req, res) => {
   }
 };
 
-const doctorRegister = async (req, res, next) => {
-  try {
-    const { name, email, password, designation } = req.body;
-
-    if (!name || !email || !password || !designation) {
-      return res.status(400).json({
-        success: false,
-        message: "All fields are required",
-      });
-    }
-
-    const existingDoctor = await prisma.doctors.findUnique({
-      where: { email },
-    });
-    if (existingDoctor) {
-      return res.status(409).json({
-        success: false,
-        message: "Email already in use",
-      });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newDoctor = await prisma.doctors.create({
-      data: { name, email, password: hashedPassword, designation },
-    });
-
-    return res.status(201).json({
-      success: true,
-      doctor: {
-        id: newDoctor.id,
-        name: newDoctor.name,
-        email: newDoctor.email,
-        designation: newDoctor.designation,
-        createdAt: newDoctor.createdAt,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
 
 const login = async (req, res) => {
   try {
@@ -288,7 +250,6 @@ module.exports = {
   forgotPassword,
   verifyOtp,
   resetPassword,
-  doctorRegister,
 };
 
 // PORT=3030
