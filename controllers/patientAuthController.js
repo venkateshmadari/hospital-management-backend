@@ -6,29 +6,21 @@ const sendMail = require("../utils/email");
 const { otptemplate } = require("../utils/otptemplate");
 dotenv.config();
 
-const register = async (req, res) => {
+const register = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body;
 
-    if (!name || !email || !password || !role) {
+    if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
         message: "All fields are required",
       });
     }
 
-    if (!["ADMIN", "DOCTOR", "PATIENT"].includes(role)) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid role specified",
-      });
-    }
-
-    // const existingUser = await prisma.user.findUnique({ where: { email } });
-    const existingUser = await prisma.user.findUnique({
+    const existingPatient = await prisma.patient.findUnique({
       where: { email }
     })
-    if (existingUser) {
+    if (existingPatient) {
       return res.status(409).json({
         success: false,
         message: "Email already in use",
@@ -37,31 +29,27 @@ const register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = await prisma.user.create({
-      data: { name, email, password: hashedPassword, role },
+    const newPatient = await prisma.patient.create({
+      data: { name, email, password: hashedPassword },
     });
 
     return res.status(201).json({
       success: true,
-      user: {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-        createdAt: newUser.createdAt,
+      patient: {
+        id: newPatient.id,
+        name: newPatient.name,
+        email: newPatient.email,
+        role: newPatient.role,
+        createdAt: newPatient.createdAt,
       },
     });
   } catch (error) {
     console.error("Registration error:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Internal server error",
-    });
+    next(error)
   }
 };
 
-
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -72,14 +60,14 @@ const login = async (req, res) => {
       });
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
+    const patient = await prisma.patient.findUnique({ where: { email } });
+    if (!patient) {
       return res.status(401).json({
         success: false,
         message: "Invalid credentials",
       });
     }
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, patient.password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -88,12 +76,12 @@ const login = async (req, res) => {
     }
     const token = jwt.sign(
       {
-        id: user.id,
-        email: user.email,
-        role: user.role,
+        id: patient.id,
+        email: patient.email,
+        role: patient.role,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: 60 * 60 * 24 * 7 } //7days
     );
 
     return res.status(200).json({
@@ -105,10 +93,10 @@ const login = async (req, res) => {
   }
 };
 
-const getUserData = async (req, res) => {
+const getUserData = async (req, res, next) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
+    const patient = await prisma.patient.findUnique({
+      where: { id: req.patient.id },
       select: {
         id: true,
         name: true,
@@ -118,16 +106,16 @@ const getUserData = async (req, res) => {
       },
     });
 
-    if (!user) {
+    if (!patient) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: "Patient not found",
       });
     }
 
     return res.status(200).json({
       success: true,
-      user,
+      patient,
     });
   } catch (error) {
     next(error);
@@ -137,10 +125,10 @@ const getUserData = async (req, res) => {
 const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
+    const patient = await prisma.patient.findUnique({ where: { email } });
 
-    if (!user) {
-      return res.status(404).json({ message: "user not found" });
+    if (!patient) {
+      return res.status(404).json({ message: "patient not found" });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000);
@@ -149,13 +137,13 @@ const forgotPassword = async (req, res, next) => {
     await prisma.otp.create({
       data: {
         otp,
-        userId: user.id,
+        userId: patient.id,
         expiredAt: expiresAt,
       },
     });
 
-    const emailTemplate = otptemplate(user.name, otp);
-    await sendMail(user.email, "Password Reset OTP", emailTemplate);
+    const emailTemplate = otptemplate(patient.name, otp);
+    await sendMail(patient.email, "Password Reset OTP", emailTemplate);
 
     return res.status(200).json({
       success: true,
@@ -174,25 +162,25 @@ const verifyOtp = async (req, res, next) => {
         message: "All fields are required",
       });
     }
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      return res.status(404).json({ message: "user not found" });
+    const patient = await prisma.patient.findUnique({ where: { email } });
+    if (!patient) {
+      return res.status(404).json({ message: "patient not found" });
     }
     const otpRecord = await prisma.otp.findFirst({
-      where: { userId: user.id },
+      where: { userId: patient.id },
     });
     if (!otpRecord) {
       return res.status(404).json({ message: "OTP not found" });
     }
-    if (otpRecord.otp !== otp) {
+    if (otpRecord.otp !== parseInt(otp)) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
     if (otpRecord.expiredAt < new Date()) {
-      await prisma.otp.delete({ where: { otp: otpRecord.otp } });
+      await prisma.otp.deleteMany({ where: { otp: otpRecord.otp } });
       return res.status(400).json({ message: "OTP expired" });
     }
 
-    await prisma.otp.delete({ where: { otp: otpRecord.otp } });
+    await prisma.otp.deleteMany({ where: { otp: otpRecord.otp } });
 
     return res.status(200).json({
       success: true,
@@ -218,19 +206,19 @@ const resetPassword = async (req, res, next) => {
         .status(400)
         .json({ success: false, message: "Passwords do not match" });
     }
-    const user = await prisma.user.findUnique({
+    const patient = await prisma.patient.findUnique({
       where: {
         email,
       },
     });
 
-    if (!user) {
+    if (!patient) {
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
     }
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await prisma.user.update({
+    await prisma.patient.update({
       where: { email },
       data: { password: hashedPassword },
     });
@@ -251,12 +239,3 @@ module.exports = {
   verifyOtp,
   resetPassword,
 };
-
-// PORT=3030
-
-// DATABASE_URL="mysql://root:@localhost:3306/hospital"
-// # DATABASE_URL="mysql://root:upendar%2F%2F2200@localhost:3306/hospital"
-// JWT_SECRET=709e88e9434b088060185a1ef3a205d3c5e8e985da163007e0ce930781e31b45c108389e3f9cb9e79d0f1c59c7666b2b6021f6dc96ce62a30861ad8ab702f4f0
-
-// EMAIL_PASS=momo bpdw ghmh typy
-// EMAIL_USER=venkatesh@spackdigi.com

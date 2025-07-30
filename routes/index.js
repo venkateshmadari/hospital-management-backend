@@ -1,13 +1,13 @@
 const express = require("express");
 const doctorAuthentication = require("./doctorAuthRoutes")
-const userRouter = require("./userRoutes");
+const patientRouter = require("./patientRoutes");
 const doctorRouter = require("./doctorRoutes");
-const authMiddleware = require("../middleware/authMiddleware");
+const authBothMiddleware = require("../middleware/doctorAuthMiddleWare")
 
 const rootRouter = express.Router();
 
 rootRouter.use("/auth", doctorAuthentication);
-rootRouter.use("/users", authMiddleware, userRouter);
-rootRouter.use("/doctors", authMiddleware, doctorRouter);
+rootRouter.use("/patients", authBothMiddleware, patientRouter);
+rootRouter.use("/doctors", authBothMiddleware, doctorRouter);
 
 module.exports = rootRouter;

@@ -1,15 +1,15 @@
 const express = require("express");
-const authController = require("../controllers/authController");
-const authMiddleware = require("../middleware/authMiddleware");
+const patientAuthController = require("../controllers/patientAuthController");
+const patientAuthMiddleware = require("../middleware/patientAuthMiddleware");
 
-const  authRouter = express.Router();
+const authRouter = express.Router();
 
-authRouter.post("/register", authController.register);
-authRouter.post("/login", authController.login);
-authRouter.post("/forgot-password", authController.forgotPassword);
-authRouter.post("/verify-otp", authController.verifyOtp);
-authRouter.post("/reset-password", authController.resetPassword);
+authRouter.post("/auth/register", patientAuthController.register);
+authRouter.post("/auth/login", patientAuthController.login);
+authRouter.post("/auth/forgot-password", patientAuthController.forgotPassword);
+authRouter.post("/auth/verify-otp", patientAuthController.verifyOtp);
+authRouter.post("/auth/reset-password", patientAuthController.resetPassword);
 
-authRouter.get("/getUserData", authMiddleware, authController.getUserData);
+authRouter.get("/getUserData", patientAuthMiddleware, patientAuthController.getUserData);
 
 module.exports = authRouter;
