@@ -74,6 +74,13 @@ const doctorLogin = async (req, res, next) => {
                 message: "Invalid credentials",
             });
         }
+        if (doctor.status !== "ACTIVE") {
+            return res.status(401).json({
+                success: false,
+                message: "Only approved accounts can access"
+            })
+        }
+
         const token = jwt.sign(
             {
                 id: doctor.id,
