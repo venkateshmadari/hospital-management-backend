@@ -14,7 +14,7 @@ const otptemplate = (name, otp) => {
           <td align="center">
             <table role="presentation" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
               <tr>
-                <td style="background-color: #4a90e2; padding: 20px; text-align: center;">
+                <td style="background-color: #020d1bff; padding: 20px; text-align: center;">
                   <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Password Reset Request</h1>
                 </td>
               </tr>
@@ -32,7 +32,7 @@ const otptemplate = (name, otp) => {
                   </p>
                   <p style="color: #666666; font-size: 16px; line-height: 1.5; margin: 0;">
                     Thank you,<br>
-                    Your Company Team
+                    My hospital Team
                   </p>
                 </td>
               </tr>
@@ -49,7 +49,10 @@ const otptemplate = (name, otp) => {
         </tr>
       </table>
     </body>
-    </html>`;
+    </html>`
+    ;
+    
+    
 };
 
 module.exports = {
