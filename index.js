@@ -2,6 +2,7 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const rootRouter = require("./routes/index");
+const authRouter = require("./routes/authRoutes");
 
 dotenv.config();
 const app = express();
@@ -17,7 +18,9 @@ app.get('/', (req, res) => {
   res.send('Welcome to the API');
 });
 
-app.use('/api/v1', rootRouter);
+app.use('/v1/admin', rootRouter);
+// for web (patients)
+app.use("/v1", authRouter)
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
