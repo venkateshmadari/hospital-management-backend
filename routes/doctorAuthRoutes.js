@@ -9,5 +9,6 @@ router.post("/forgot-password", doctorAuthController.doctorForgotPassword);
 router.post("/verify-otp", doctorAuthController.doctorVerifyOtp);
 router.post("/reset-password", doctorAuthController.doctorResetPassword);
 
+
 router.get("/getUserData", doctorAuthMiddleWare, doctorAuthController.doctorGetUserData);
 module.exports = router

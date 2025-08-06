@@ -61,6 +61,7 @@ const doctorLogin = async (req, res, next) => {
         }
 
         const doctor = await prisma.doctors.findUnique({ where: { email } });
+        console.log(doctor);
         if (!doctor) {
             return res.status(401).json({
                 success: false,
@@ -72,6 +73,12 @@ const doctorLogin = async (req, res, next) => {
             return res.status(401).json({
                 success: false,
                 message: "Invalid credentials",
+            });
+        }
+        if (doctor.status !== "ACTIVE") {
+            return res.status(403).json({
+                success: false,
+                message: "Account is inactive",
             });
         }
         const token = jwt.sign(
