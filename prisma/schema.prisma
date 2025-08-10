@@ -38,7 +38,7 @@ model Doctors {
   status      DoctorStatus   @default(INACTIVE)
   designation String
   image       String?
-  specialty   String?
+  speciality  String
   description String?
   createdAt   DateTime       @default(now())
   Avability   Availability[]

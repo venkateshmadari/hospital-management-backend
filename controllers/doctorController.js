@@ -4,31 +4,89 @@ const path = require('path');
 
 const getAllDoctors = async (req, res, next) => {
   try {
+    const { page = 1, limit = 20, search = "", status, speciality } = req.query;
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const where = {};
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { email: { contains: search } },
+      ];
+    }
+
+    if (status) {
+      where.status = status;
+    }
+    if (speciality) {
+      where.speciality = speciality;
+    }
+
     const allDoctors = await prisma.doctors.findMany({
+      where,
       select: {
         id: true,
         name: true,
         email: true,
-        role: true,
         designation: true,
         status: true,
         image: true,
-        specialty: true,
-        description: true,
+        speciality: true,
         createdAt: true,
-        Avability: true
       },
       orderBy: { createdAt: "desc" },
+      skip,
+      take: limitNumber,
     });
+
+    const totalDoctors = await prisma.doctors.count({ where });
+
+    const totalPages = Math.ceil(totalDoctors / limitNumber);
 
     return res.status(200).json({
       status: "success",
       data: allDoctors,
+      pagination: {
+        totalItems: totalDoctors,
+        totalPages,
+        currentPage: pageNumber,
+        itemsPerPage: limitNumber,
+        hasNextPage: pageNumber < totalPages,
+        hasPreviousPage: pageNumber > 1,
+      },
     });
   } catch (error) {
     next(error);
   }
 };
+
+const getDoctorStats = async () => {
+  try {
+    const totalDoctors = await prisma.doctors.count()
+    const activeDoctors = await prisma.doctors.count({
+      where: {
+        status: "ACTIVE"
+      }
+    })
+    const inActiveDoctors = await prisma.doctors.count({
+      where: {
+        status: "INACTIVE"
+      }
+    })
+    return res.status(200).json({
+      status: "success",
+      data: {
+        totalDoctors,
+        activeDoctors,
+        inActiveDoctors
+      }
+    })
+  } catch (error) {
+    next(error)
+  }
+}
 
 const uploadDoctorImage = async (req, res, next) => {
   try {
@@ -318,6 +376,7 @@ const updateDoctorAvailability = async (req, res, next) => {
 
 module.exports = {
   getAllDoctors,
+  getDoctorStats,
   uploadDoctorImage,
   getSingleDoctor,
   updatedSingleDoctor,

@@ -8,10 +8,23 @@ const path = require('path');
 dotenv.config();
 const app = express();
 
+const allowedOrigins = [
+  'http://localhost:3000', 
+  'http://localhost:5173', 
+  'https://your-production-domain.com'
+];
+
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
+
 app.use(express.json());
 
 
