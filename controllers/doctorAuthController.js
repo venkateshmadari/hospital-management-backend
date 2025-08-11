@@ -9,9 +9,9 @@ dotenv.config();
 
 const doctorRegister = async (req, res, next) => {
     try {
-        const { name, email, password, designation } = req.body;
+        const { name, email, password, designation, speciality } = req.body;
 
-        if (!name || !email || !password || !designation) {
+        if (!name || !email || !password || !designation || !speciality) {
             return res.status(400).json({
                 success: false,
                 message: "All fields are required",
@@ -31,18 +31,12 @@ const doctorRegister = async (req, res, next) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const newDoctor = await prisma.doctors.create({
-            data: { name, email, password: hashedPassword, designation },
+            data: { name, email, password: hashedPassword, designation, speciality },
         });
 
         return res.status(201).json({
             success: true,
-            doctor: {
-                id: newDoctor.id,
-                name: newDoctor.name,
-                email: newDoctor.email,
-                designation: newDoctor.designation,
-                createdAt: newDoctor.createdAt,
-            },
+            message: "Account registered successfully"
         });
     } catch (error) {
         next(error);
@@ -76,11 +70,12 @@ const doctorLogin = async (req, res, next) => {
             });
         }
         if (doctor.status !== "ACTIVE") {
-            return res.status(403).json({
+            return res.status(401).json({
                 success: false,
-                message: "Account is inactive",
-            });
+                message: "Only approved accounts can access"
+            })
         }
+
         const token = jwt.sign(
             {
                 id: doctor.id,
@@ -94,6 +89,7 @@ const doctorLogin = async (req, res, next) => {
         return res.status(200).json({
             success: true,
             token,
+            role: doctor.role
         });
     } catch (error) {
         next(error);
@@ -124,6 +120,7 @@ const doctorGetUserData = async (req, res, next) => {
         return res.status(200).json({
             success: true,
             user: doctor,
+            role: doctor.role
         });
     } catch (error) {
         next(error);
@@ -173,7 +170,7 @@ const doctorVerifyOtp = async (req, res, next) => {
         }
         const doctor = await prisma.doctors.findUnique({ where: { email } });
         if (!doctor) {
-            return res.status(404).json({ message: "doctor not found" });
+            return res.status(404).json({ message: "No user found" });
         }
         const otpRecord = await prisma.otp.findFirst({
             where: { userId: doctor.id },

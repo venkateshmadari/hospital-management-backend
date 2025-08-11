@@ -14,6 +14,7 @@ async function main() {
             role: 'ADMIN',
             status: 'ACTIVE',
             designation: 'System Admin',
+            speciality: "owner"
         },
     });
 
