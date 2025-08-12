@@ -11,6 +11,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:3000', 
   'http://localhost:5173', 
+  'http://localhost:5174', 
   'https://your-production-domain.com'
 ];
 
@@ -32,7 +33,7 @@ app.get('/', (req, res) => {
   res.send('Welcome to the API');
 });
 
-app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 app.use('/v1/admin', rootRouter);
 // for web (patients)
 app.use("/v1", authRouter)
