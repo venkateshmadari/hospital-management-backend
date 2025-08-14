@@ -109,6 +109,7 @@ const doctorGetUserData = async (req, res, next) => {
         image: true,
         speciality: true,
         status: true,
+        Avability: true,
       },
     });
 
