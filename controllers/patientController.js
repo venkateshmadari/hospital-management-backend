@@ -2,6 +2,10 @@ const prisma = require("../utils/prisma");
 
 const getAllPatients = async (req, res, next) => {
   try {
+    const { page = 1, limit = 25 } = req.query
+    const pageNumber = Number(page)
+    const limitNumber = Number(page)
+    const skip = (pageNumber - 1) / limitNumber
     const patients = await prisma.patient.findMany({
       select: {
         id: true,
@@ -10,13 +14,24 @@ const getAllPatients = async (req, res, next) => {
         role: true,
         createdAt: true,
       },
+      skip,
+      take: limitNumber,
       orderBy: { createdAt: "desc" },
     });
-
+    console.log(patients, "patiness");
+    const totalPatients = await prisma.patient.count();
+    const totalPages = Math.ceil(totalPatients / limitNumber);
     return res.status(200).json({
       success: true,
-      count: patients.length,
       data: patients,
+      pagination: {
+        totalItems: totalPatients,
+        totalPages,
+        currentPage: pageNumber,
+        itemsPerPage: limitNumber,
+        hasNextPage: pageNumber < totalPages,
+        hasPreviousPage: pageNumber > 1,
+      },
     });
   } catch (error) {
     console.error("Get all patients error:", error);
