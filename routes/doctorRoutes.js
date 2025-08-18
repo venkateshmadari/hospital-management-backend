@@ -9,6 +9,7 @@ router.delete("/", doctorController.deleteDoctorWithAvailability);
 router.get("/stats", doctorController.getDoctorStats);
 router.get("/:id", doctorController.getSingleDoctor);
 router.put("/:id", doctorController.updatedSingleDoctor);
+router.put("/status/:id", doctorController.updateDoctorStatus);
 router.post("/availability", doctorController.doctorAvability);
 router.put("/availability/:id", doctorController.updateDoctorAvailability);
 router.delete("/availability", doctorController.deleteAvailabilities);

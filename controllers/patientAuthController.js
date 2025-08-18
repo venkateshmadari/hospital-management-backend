@@ -18,8 +18,8 @@ const register = async (req, res, next) => {
     }
 
     const existingPatient = await prisma.patient.findUnique({
-      where: { email }
-    })
+      where: { email },
+    });
     if (existingPatient) {
       return res.status(409).json({
         success: false,
@@ -45,7 +45,7 @@ const register = async (req, res, next) => {
     });
   } catch (error) {
     console.error("Registration error:", error);
-    next(error)
+    next(error);
   }
 };
 

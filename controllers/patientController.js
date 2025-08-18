@@ -2,11 +2,20 @@ const prisma = require("../utils/prisma");
 
 const getAllPatients = async (req, res, next) => {
   try {
-    const { page = 1, limit = 25 } = req.query
-    const pageNumber = Number(page)
-    const limitNumber = Number(page)
-    const skip = (pageNumber - 1) / limitNumber
+    const { page = 1, limit = 25, search = "" } = req.query;
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
+    const skip = (pageNumber - 1) / limitNumber;
+
+    const where = {};
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { email: { contains: search } },
+      ];
+    }
     const patients = await prisma.patient.findMany({
+      where,
       select: {
         id: true,
         name: true,
@@ -18,7 +27,6 @@ const getAllPatients = async (req, res, next) => {
       take: limitNumber,
       orderBy: { createdAt: "desc" },
     });
-    console.log(patients, "patiness");
     const totalPatients = await prisma.patient.count();
     const totalPages = Math.ceil(totalPatients / limitNumber);
     return res.status(200).json({
@@ -105,8 +113,67 @@ const updatePatient = async (req, res, next) => {
   }
 };
 
+const patientStats = async (req, res, next) => {
+  try {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    const patientsCount = await prisma.patient.count();
+    const thisMonthPatients = await prisma.patient.count({
+      where: {
+        createdAt: {
+          gte: firstDayOfMonth,
+          lte: lastDayOfMonth,
+        },
+      },
+    });
+
+    res.status(200).json({
+      message: "Stats retrevied successfully",
+      data: {
+        patientsCount,
+        thisMonthPatients,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const patientsDelete = async (req, res, next) => {
+  try {
+    const { patientIds } = req.body;
+    if (!patientIds || !Array.isArray(patientIds) || patientIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Patient IDs are required",
+      });
+    }
+
+    await prisma.$transaction([
+      prisma.patient.deleteMany({
+        where: {
+          id: {
+            in: patientIds,
+          },
+        },
+      }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: "Patients deleted successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAllPatients,
   getPatientById,
   updatePatient,
+  patientStats,
+  patientsDelete,
 };

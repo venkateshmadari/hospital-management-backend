@@ -1,7 +1,7 @@
 const prisma = require("../utils/prisma");
 const fs = require("fs");
 const path = require("path");
-const validateTimes = require("../utils/validateTimes")
+const validateTimes = require("../utils/validateTimes");
 
 const getAllDoctors = async (req, res, next) => {
   try {
@@ -46,13 +46,23 @@ const getAllDoctors = async (req, res, next) => {
       take: limitNumber,
     });
 
+    const formattedDoctors = allDoctors.map((doctor) => ({
+      ...doctor,
+      image: doctor.image
+        ? `${req.protocol}://${req.get("host")}${doctor.image.replace(
+            /\\/g,
+            "/"
+          )}`
+        : null,
+    }));
+
     const totalDoctors = await prisma.doctors.count({ where });
 
     const totalPages = Math.ceil(totalDoctors / limitNumber);
 
     return res.status(200).json({
       status: "success",
-      data: allDoctors,
+      data: formattedDoctors,
       pagination: {
         totalItems: totalDoctors,
         totalPages,
@@ -190,10 +200,10 @@ const getSingleDoctor = async (req, res, next) => {
     const formattedDoctor = {
       ...doctor,
       image: doctor.image
-        ? `${req.protocol}://${req.get("host")}/public/${doctor.image.replace(
-          /\\/g,
-          "/"
-        )}`
+        ? `${req.protocol}://${req.get("host")}${doctor.image.replace(
+            /\\/g,
+            "/"
+          )}`
         : null,
     };
 
@@ -241,12 +251,62 @@ const updatedSingleDoctor = async (req, res, next) => {
   }
 };
 
+const updateDoctorStatus = async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    const doctorId = req.params.id;
+    const allowedStatuses = ["ACTIVE", "INACTIVE"];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status. Allowed values are: ${allowedStatuses.join(
+          ", "
+        )}`,
+      });
+    }
+
+    const findDoctor = await prisma.doctors.findUnique({
+      where: { id: doctorId },
+    });
+
+    if (!findDoctor) {
+      return res.status(404).json({
+        success: false,
+        message: `Doctor not found with id of ${doctorId}`,
+      });
+    }
+
+    const updatedDoctor = await prisma.doctors.update({
+      where: { id: doctorId },
+      data: { status },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: updatedDoctor,
+      message: "Doctor status updated successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 const doctorAvability = async (req, res, next) => {
   try {
     const { doctorId, availabilites } = req.body;
 
-    if (!doctorId || !Array.isArray(availabilites) || availabilites.length === 0) {
-      return res.status(400).json({ error: "doctorId and availabilites are required" });
+    if (
+      !doctorId ||
+      !Array.isArray(availabilites) ||
+      availabilites.length === 0
+    ) {
+      return res
+        .status(400)
+        .json({ error: "doctorId and availabilites are required" });
     }
 
     const validDays = [
@@ -266,8 +326,16 @@ const doctorAvability = async (req, res, next) => {
         return res.status(400).json({ error: `Invalid day: ${avail.day}` });
       }
 
-      if (!avail.startTime || !avail.endTime || !avail.breakStartTime || !avail.breakEndTime) {
-        return res.status(400).json({ error: "startTime, endTime, breakStartTime, breakEndTime are required" });
+      if (
+        !avail.startTime ||
+        !avail.endTime ||
+        !avail.breakStartTime ||
+        !avail.breakEndTime
+      ) {
+        return res.status(400).json({
+          error:
+            "startTime, endTime, breakStartTime, breakEndTime are required",
+        });
       }
 
       if (
@@ -276,10 +344,17 @@ const doctorAvability = async (req, res, next) => {
         !timeRegex.test(avail.breakStartTime) ||
         !timeRegex.test(avail.breakEndTime)
       ) {
-        return res.status(400).json({ error: "Invalid time format. Use HH:mm" });
+        return res
+          .status(400)
+          .json({ error: "Invalid time format. Use HH:mm" });
       }
 
-      const errorMsg = validateTimes(avail.startTime, avail.endTime, avail.breakStartTime, avail.breakEndTime);
+      const errorMsg = validateTimes(
+        avail.startTime,
+        avail.endTime,
+        avail.breakStartTime,
+        avail.breakEndTime
+      );
       if (errorMsg) {
         return res.status(400).json({ error: errorMsg });
       }
@@ -305,7 +380,7 @@ const doctorAvability = async (req, res, next) => {
       data: created,
     });
   } catch (error) {
-    next(error)
+    next(error);
   }
 };
 
@@ -314,9 +389,17 @@ const updateDoctorAvailability = async (req, res, next) => {
     const { id } = req.params;
     const { startTime, endTime, breakStartTime, breakEndTime, day } = req.body;
 
-    if (!id || !day || !startTime || !endTime || !breakStartTime || !breakEndTime) {
+    if (
+      !id ||
+      !day ||
+      !startTime ||
+      !endTime ||
+      !breakStartTime ||
+      !breakEndTime
+    ) {
       return res.status(400).json({
-        error: "id, day, startTime, endTime, breakStartTime, breakEndTime are required",
+        error:
+          "id, day, startTime, endTime, breakStartTime, breakEndTime are required",
       });
     }
 
@@ -330,7 +413,8 @@ const updateDoctorAvailability = async (req, res, next) => {
       "Sunday",
     ];
 
-    const formattedDay = day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+    const formattedDay =
+      day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
 
     if (!validDays.includes(formattedDay)) {
       return res.status(400).json({ error: `Invalid day: ${day}` });
@@ -356,7 +440,7 @@ const updateDoctorAvailability = async (req, res, next) => {
     }
 
     const existing = await prisma.availability.findUnique({
-      where: { id: id }
+      where: { id: id },
     });
 
     if (!existing) {
@@ -387,7 +471,11 @@ const updateDoctorAvailability = async (req, res, next) => {
 const deleteAvailabilities = async (req, res, next) => {
   try {
     const { availabilityIds } = req.body;
-    if (!availabilityIds || !Array.isArray(availabilityIds) || availabilityIds.length === 0) {
+    if (
+      !availabilityIds ||
+      !Array.isArray(availabilityIds) ||
+      availabilityIds.length === 0
+    ) {
       return res.status(400).json({
         error: "availabilityIds array is required",
       });
@@ -397,17 +485,17 @@ const deleteAvailabilities = async (req, res, next) => {
       prisma.availability.deleteMany({
         where: {
           id: {
-            in: availabilityIds
-          }
-        }
+            in: availabilityIds,
+          },
+        },
       }),
     ]);
 
     return res.status(200).json({
       message: "Availabilities deleted successfully",
       data: {
-        count: result[0].count
-      }
+        count: result[0].count,
+      },
     });
   } catch (error) {
     console.error("Error deleting availabilities:", error);
@@ -426,21 +514,23 @@ const deleteDoctorWithAvailability = async (req, res, next) => {
     const existingDoctors = await prisma.doctors.findMany({
       where: {
         id: {
-          in: doctorIds
-        }
+          in: doctorIds,
+        },
       },
       select: {
-        id: true
-      }
-    })
-    const existingDoctorIds = existingDoctors.map(doctor => doctor.id)
-    const nonExistingDoctorIds = doctorIds.filter(id => !existingDoctorIds.includes(id))
+        id: true,
+      },
+    });
+    const existingDoctorIds = existingDoctors.map((doctor) => doctor.id);
+    const nonExistingDoctorIds = doctorIds.filter(
+      (id) => !existingDoctorIds.includes(id)
+    );
     if (nonExistingDoctorIds.length > 0) {
       return res.status(404).json({
         success: false,
         error: "Some doctor IDs not found",
         nonExistingIds,
-        existingDoctorIds
+        existingDoctorIds,
       });
     }
 
@@ -448,26 +538,26 @@ const deleteDoctorWithAvailability = async (req, res, next) => {
       prisma.availability.deleteMany({
         where: {
           doctorId: {
-            in: doctorIds
-          }
-        }
+            in: doctorIds,
+          },
+        },
       }),
       prisma.doctors.deleteMany({
         where: {
           id: {
-            in: doctorIds
-          }
-        }
-      })
-    ])
+            in: doctorIds,
+          },
+        },
+      }),
+    ]);
     return res.status(200).json({
       success: true,
       message: `Successfully deleted ${doctorResult.count} doctor(s) and ${availabilityResult.count} availability records`,
-    })
+    });
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
 
 module.exports = {
   getAllDoctors,
@@ -478,5 +568,6 @@ module.exports = {
   doctorAvability,
   updateDoctorAvailability,
   deleteAvailabilities,
-  deleteDoctorWithAvailability
+  deleteDoctorWithAvailability,
+  updateDoctorStatus,
 };
