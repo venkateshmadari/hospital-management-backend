@@ -14,12 +14,13 @@ datasource db {
 }
 
 model Patient {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role     @default(PATIENT)
-  createdAt DateTime @default(now())
+  id          String        @id @default(uuid())
+  name        String
+  email       String        @unique
+  password    String
+  role        Role          @default(PATIENT)
+  createdAt   DateTime      @default(now())
+  Appointment Appointment[]
 }
 
 model Otp {
@@ -42,6 +43,7 @@ model Doctors {
   description String?
   createdAt   DateTime       @default(now())
   Avability   Availability[]
+  Appointment Appointment[]
 }
 
 model Availability {
@@ -55,6 +57,19 @@ model Availability {
   breakEndTime   String
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+}
+
+model Appointment {
+  id        String            @id @default(uuid())
+  patientId String
+  doctorId  String
+  patient   Patient           @relation(fields: [patientId], references: [id])
+  doctor    Doctors           @relation(fields: [doctorId], references: [id])
+  date      DateTime
+  startTime String
+  status    AppointmentStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
 }
 
 enum Role {
@@ -76,4 +91,10 @@ enum DayOfWeek {
   Friday
   Saturday
   Sunday
+}
+
+enum AppointmentStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
 }

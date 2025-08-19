@@ -1,26 +1,26 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const prisma = require("../utils/prisma");
+const prisma = require("../../utils/prisma");
 const dotenv = require("dotenv");
-const sendMail = require("../utils/email");
-const { otptemplate } = require("../utils/otptemplate");
+const sendMail = require("../../utils/email");
+const { otptemplate } = require("../../utils/otptemplate");
 dotenv.config();
 
-const register = async (req, res, next) => {
+const doctorRegister = async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, designation, speciality } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !designation || !speciality) {
       return res.status(400).json({
         success: false,
         message: "All fields are required",
       });
     }
 
-    const existingPatient = await prisma.patient.findUnique({
+    const existingDoctor = await prisma.doctors.findUnique({
       where: { email },
     });
-    if (existingPatient) {
+    if (existingDoctor) {
       return res.status(409).json({
         success: false,
         message: "Email already in use",
@@ -29,27 +29,20 @@ const register = async (req, res, next) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newPatient = await prisma.patient.create({
-      data: { name, email, password: hashedPassword },
+    const newDoctor = await prisma.doctors.create({
+      data: { name, email, password: hashedPassword, designation, speciality },
     });
 
     return res.status(201).json({
       success: true,
-      patient: {
-        id: newPatient.id,
-        name: newPatient.name,
-        email: newPatient.email,
-        role: newPatient.role,
-        createdAt: newPatient.createdAt,
-      },
+      message: "Account registered successfully",
     });
   } catch (error) {
-    console.error("Registration error:", error);
     next(error);
   }
 };
 
-const login = async (req, res, next) => {
+const doctorLogin = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -60,75 +53,90 @@ const login = async (req, res, next) => {
       });
     }
 
-    const patient = await prisma.patient.findUnique({ where: { email } });
-    if (!patient) {
+    const doctor = await prisma.doctors.findUnique({ where: { email } });
+    if (!doctor) {
       return res.status(401).json({
         success: false,
         message: "Invalid credentials",
       });
     }
-    const isMatch = await bcrypt.compare(password, patient.password);
+    const isMatch = await bcrypt.compare(password, doctor.password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
         message: "Invalid credentials",
       });
     }
+    if (doctor.status !== "ACTIVE") {
+      return res.status(401).json({
+        success: false,
+        message: "Only approved accounts can access",
+      });
+    }
+
     const token = jwt.sign(
       {
-        id: patient.id,
-        email: patient.email,
-        role: patient.role,
+        id: doctor.id,
+        email: doctor.email,
+        role: doctor.role,
       },
       process.env.JWT_SECRET,
-      { expiresIn: 60 * 60 * 24 * 7 } //7days
+      { expiresIn: "1h" }
     );
 
     return res.status(200).json({
       success: true,
       token,
+      role: doctor.role,
     });
   } catch (error) {
     next(error);
   }
 };
 
-const getUserData = async (req, res, next) => {
+const doctorGetUserData = async (req, res, next) => {
   try {
-    const patient = await prisma.patient.findUnique({
-      where: { id: req.patient.id },
+    const doctor = await prisma.doctors.findUnique({
+      where: { id: req.doctors.id },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        designation: true,
         createdAt: true,
+        description: true,
+        image: true,
+        speciality: true,
+        status: true,
+        Avability: true,
       },
     });
 
-    if (!patient) {
+    if (!doctor) {
       return res.status(404).json({
         success: false,
-        message: "Patient not found",
+        message: "User not found",
       });
     }
 
     return res.status(200).json({
       success: true,
-      patient,
+      user: doctor,
+      role: doctor.role,
     });
   } catch (error) {
     next(error);
   }
 };
 
-const forgotPassword = async (req, res, next) => {
+const doctorForgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
-    const patient = await prisma.patient.findUnique({ where: { email } });
+    const doctor = await prisma.doctors.findUnique({ where: { email } });
 
-    if (!patient) {
-      return res.status(404).json({ message: "patient not found" });
+    if (!doctor) {
+      return res.status(404).json({ message: "doctor not found" });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000);
@@ -137,13 +145,13 @@ const forgotPassword = async (req, res, next) => {
     await prisma.otp.create({
       data: {
         otp,
-        userId: patient.id,
+        userId: doctor.id,
         expiredAt: expiresAt,
       },
     });
 
-    const emailTemplate = otptemplate(patient.name, otp);
-    await sendMail(patient.email, "Password Reset OTP", emailTemplate);
+    const emailTemplate = otptemplate(doctor.name, otp);
+    await sendMail(doctor.email, "Password Reset OTP", emailTemplate);
 
     return res.status(200).json({
       success: true,
@@ -154,7 +162,7 @@ const forgotPassword = async (req, res, next) => {
   }
 };
 
-const verifyOtp = async (req, res, next) => {
+const doctorVerifyOtp = async (req, res, next) => {
   try {
     const { otp, email } = req.body;
     if (!email || !otp) {
@@ -162,12 +170,12 @@ const verifyOtp = async (req, res, next) => {
         message: "All fields are required",
       });
     }
-    const patient = await prisma.patient.findUnique({ where: { email } });
-    if (!patient) {
-      return res.status(404).json({ message: "patient not found" });
+    const doctor = await prisma.doctors.findUnique({ where: { email } });
+    if (!doctor) {
+      return res.status(404).json({ message: "No user found" });
     }
     const otpRecord = await prisma.otp.findFirst({
-      where: { userId: patient.id },
+      where: { userId: doctor.id },
     });
     if (!otpRecord) {
       return res.status(404).json({ message: "OTP not found" });
@@ -191,7 +199,7 @@ const verifyOtp = async (req, res, next) => {
   }
 };
 
-const resetPassword = async (req, res, next) => {
+const doctorResetPassword = async (req, res, next) => {
   try {
     const { email, newPassword, confirmPassword } = req.body;
     if (!email || !newPassword || !confirmPassword) {
@@ -206,19 +214,19 @@ const resetPassword = async (req, res, next) => {
         .status(400)
         .json({ success: false, message: "Passwords do not match" });
     }
-    const patient = await prisma.patient.findUnique({
+    const doctor = await prisma.doctors.findUnique({
       where: {
         email,
       },
     });
 
-    if (!patient) {
+    if (!doctor) {
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
     }
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await prisma.patient.update({
+    await prisma.doctors.update({
       where: { email },
       data: { password: hashedPassword },
     });
@@ -232,10 +240,10 @@ const resetPassword = async (req, res, next) => {
 };
 
 module.exports = {
-  register,
-  login,
-  getUserData,
-  forgotPassword,
-  verifyOtp,
-  resetPassword,
+  doctorRegister,
+  doctorLogin,
+  doctorGetUserData,
+  doctorForgotPassword,
+  doctorVerifyOtp,
+  doctorResetPassword,
 };

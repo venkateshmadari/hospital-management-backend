@@ -1,7 +1,7 @@
-const prisma = require("../utils/prisma");
+const prisma = require("../../utils/prisma");
 const fs = require("fs");
 const path = require("path");
-const validateTimes = require("../utils/validateTimes");
+const validateTimes = require("../../utils/validateTimes");
 
 const getAllDoctors = async (req, res, next) => {
   try {
@@ -19,6 +19,7 @@ const getAllDoctors = async (req, res, next) => {
       where.OR = [
         { name: { contains: search } },
         { email: { contains: search } },
+        { speciality: { contains: search } },
       ];
     }
 
