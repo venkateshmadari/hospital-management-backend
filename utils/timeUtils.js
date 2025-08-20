@@ -1,6 +1,6 @@
 function parseTime(timeStr) {
   const [hours, minutes] = timeStr.split(":").map(Number);
-  return hours + minutes / 60; 
+  return hours + minutes / 60;
 }
 
 function formatTime(decimal) {
@@ -20,7 +20,7 @@ function generateSlots(startTime, endTime, breakStartTime, breakEndTime) {
   const breakEnd = parseTime(breakEndTime);
 
   while (current < end) {
-    const next = current + 0.5; 
+    const next = current + 0.5;
     if (!(current >= breakStart && next <= breakEnd)) {
       slots.push(`${formatTime(current)} - ${formatTime(next)}`);
     }
