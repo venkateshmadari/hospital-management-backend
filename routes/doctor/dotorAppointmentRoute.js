@@ -1,7 +1,9 @@
 const router = require("express").Router();
-const appointments = require("../../controllers/Doctor/AppointmentsController");
+const appointments = require("../../controllers/Doctor/doctorAppointmentsControllers");
 
-router.get("/", appointments.getAllAppointments);
-router.get("/stats", appointments.appointmentStats);
+router.get("/", appointments.getDoctorAppointments);
+router.get("/stats", appointments.getDoctorAppointmentStats);
+router.put("/status/:id", appointments.updateAppointmentStatus);
+router.delete("/", appointments.deleteAppointments)
 
 module.exports = router;

@@ -18,6 +18,8 @@ model Patient {
   name        String
   email       String        @unique
   password    String
+  image       String?
+  phoneNumber String?
   role        Role          @default(PATIENT)
   createdAt   DateTime      @default(now())
   Appointment Appointment[]
