@@ -92,6 +92,26 @@ const bookAppointment = async (req, res, next) => {
   }
 };
 
+const getPatientAppointments = async (req, res, next) => {
+  try {
+    const { id } = req.patient;
+    const findData = await prisma.appointment.findFirst({
+      where: {
+        patientId: id,
+      },
+      orderBy: { date: "desc" },
+    });
+
+    return res.status(200).json({
+      message: "Appointment status fetched successfully",
+      data: findData,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   bookAppointment,
+  getPatientAppointments,
 };

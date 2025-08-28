@@ -9,11 +9,27 @@ const getDoctorsWithSpeciality = async (req, res, next) => {
         speciality: speciality,
         status: "ACTIVE",
       },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+      },
     });
+
+    const formattedDoctors = requiredDoctors.map((doctor) => ({
+      ...doctor,
+      image: doctor.image
+        ? `${req.protocol}://${req.get("host")}${doctor.image.replace(
+            /\\/g,
+            "/"
+          )}`
+        : null,
+    }));
 
     return res.status(200).json({
       message: "Dcotors retreived successfully",
-      data: requiredDoctors,
+      data: formattedDoctors,
     });
   } catch (error) {
     next(error);
@@ -110,7 +126,7 @@ const doctorsTimeSlots = async (req, res, next) => {
     return res.json({
       doctorId: id,
       name: checkDoctor.name,
-      slots: allSlots,
+      data: allSlots,
     });
   } catch (error) {
     next(error);

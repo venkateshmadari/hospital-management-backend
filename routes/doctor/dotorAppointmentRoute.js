@@ -4,6 +4,6 @@ const appointments = require("../../controllers/Doctor/doctorAppointmentsControl
 router.get("/", appointments.getDoctorAppointments);
 router.get("/stats", appointments.getDoctorAppointmentStats);
 router.put("/status/:id", appointments.updateAppointmentStatus);
-router.delete("/", appointments.deleteAppointments)
+router.delete("/", appointments.deleteAppointments);
 
 module.exports = router;

@@ -34,6 +34,7 @@ const register = async (req, res, next) => {
     });
 
     return res.status(201).json({
+      message: "Account registered successfully",
       success: true,
       patient: {
         id: newPatient.id,
@@ -102,6 +103,8 @@ const getUserData = async (req, res, next) => {
         name: true,
         email: true,
         role: true,
+        image: true,
+        phoneNumber: true,
         createdAt: true,
       },
     });

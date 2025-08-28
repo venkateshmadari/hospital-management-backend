@@ -82,18 +82,18 @@ const getPatientById = async (req, res, next) => {
 const updatePatient = async (req, res, next) => {
   try {
     const patientId = req.params.id;
-    const { name, email } = req.body;
+    const { name, email, phoneNumber } = req.body;
 
-    if (!name || !email) {
+    if (!name || !email || !phoneNumber) {
       return res.status(400).json({
         success: false,
-        message: "Name and email are required",
+        message: "Name, email and phonenumber are required",
       });
     }
 
     const updatedPatient = await prisma.patient.update({
       where: { id: patientId },
-      data: { name, email },
+      data: { name, email, phoneNumber },
       select: {
         id: true,
         name: true,
