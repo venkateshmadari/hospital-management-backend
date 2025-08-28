@@ -1,4 +1,6 @@
 const prisma = require("../../utils/prisma");
+const fs = require("fs");
+const path = require("path");
 
 const getAllPatients = async (req, res, next) => {
   try {
@@ -170,10 +172,79 @@ const patientsDelete = async (req, res, next) => {
   }
 };
 
+const updatePatientImage = async (req, res, next) => {
+  try {
+    const patientId = req.params.id;
+
+    if (!req.file) {
+      return res.status(400).json({
+        message: "No file uploaded",
+        success: false,
+      });
+    }
+
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId },
+    });
+
+    if (!patient) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({
+        message: "No user found",
+        success: false,
+      });
+    }
+
+    if (patient.image) {
+      const oldImagePath = path.join(__dirname, "../public", patient.image);
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlinkSync(oldImagePath);
+      }
+    }
+
+    const imagePath = `/uploads/${req.file.filename}`;
+
+    const updatedPatient = await prisma.patient.update({
+      where: { id: patientId },
+      data: { image: imagePath },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        phoneNumber: true,
+      },
+    });
+
+    const formattedPatient = {
+      ...updatedPatient,
+      image: updatedPatient.image
+        ? `${req.protocol}://${req.get("host")}${updatedPatient.image.replace(
+            /\\/g,
+            "/"
+          )}`
+        : null,
+    };
+
+    return res.status(200).json({
+      success: true,
+      data: formattedPatient,
+      message: "Profile uploaded successfully",
+    });
+  } catch (error) {
+    if (req.file) {
+      fs.unlinkSync(req.file.path);
+    }
+    next(error);
+  }
+};
+
+
 module.exports = {
   getAllPatients,
   getPatientById,
   updatePatient,
   patientStats,
   patientsDelete,
+  updatePatientImage
 };

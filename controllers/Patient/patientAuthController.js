@@ -116,9 +116,19 @@ const getUserData = async (req, res, next) => {
       });
     }
 
+    const formattedPatient = {
+      ...patient,
+      image: patient.image
+        ? `${req.protocol}://${req.get("host")}${patient.image.replace(
+          /\\/g,
+          "/"
+        )}`
+        : null,
+    };
+
     return res.status(200).json({
       success: true,
-      patient,
+      patient: formattedPatient,
     });
   } catch (error) {
     next(error);

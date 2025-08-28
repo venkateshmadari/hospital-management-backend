@@ -5,6 +5,6 @@ const bookAppointmentData = require("../../controllers/Patient/bookAppointmentCo
 router.get("/speciality", doctorData.getDoctorsWithSpeciality);
 router.get("/timeslot/:id", doctorData.doctorsTimeSlots);
 router.post("/book-appointment", bookAppointmentData.bookAppointment);
-router.post("/your-appointment", bookAppointmentData.getPatientAppointments);
+router.get("/your-appointment", bookAppointmentData.getPatientAppointments);
 
 module.exports = router;

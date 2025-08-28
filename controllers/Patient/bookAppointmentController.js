@@ -95,16 +95,47 @@ const bookAppointment = async (req, res, next) => {
 const getPatientAppointments = async (req, res, next) => {
   try {
     const { id } = req.patient;
-    const findData = await prisma.appointment.findFirst({
+    console.log(id);
+    const findData = await prisma.appointment.findMany({
       where: {
         patientId: id,
       },
-      orderBy: { date: "desc" },
+      orderBy: {
+        createdAt: "desc",
+      },
+      select: {
+        createdAt: true,
+        date: true,
+        startTime: true,
+        status: true,
+        doctor: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            speciality: true,
+            image: true
+          },
+        },
+      },
     });
+
+    const formattedData = findData.map((appointment) => ({
+      ...appointment,
+      doctor: {
+        ...appointment.doctor,
+        image: appointment.doctor?.image
+          ? `${req.protocol}://${req.get("host")}${appointment.doctor.image.replace(
+            /\\/g,
+            "/"
+          )}`
+          : null,
+      },
+    }));
 
     return res.status(200).json({
       message: "Appointment status fetched successfully",
-      data: findData,
+      data: formattedData,
     });
   } catch (error) {
     next(error);
