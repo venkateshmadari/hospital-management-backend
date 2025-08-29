@@ -14,6 +14,7 @@ const allowedOrigins = [
   "http://localhost:5174",
   "http://localhost:5175",
   "https://your-production-domain.com",
+  "https://hospital-management-website-nine.vercel.app",
 ];
 
 app.use(

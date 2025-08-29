@@ -33,19 +33,21 @@ model Otp {
 }
 
 model Doctors {
-  id          String         @id @default(uuid())
-  name        String
-  email       String         @unique
-  password    String
-  role        Role           @default(DOCTOR)
-  status      DoctorStatus   @default(INACTIVE)
-  designation String
-  image       String?
-  speciality  String
-  description String?
-  createdAt   DateTime       @default(now())
-  Avability   Availability[]
-  Appointment Appointment[]
+  id             String              @id @default(uuid())
+  name           String
+  email          String              @unique
+  password       String
+  role           Role                @default(DOCTOR)
+  status         DoctorStatus        @default(INACTIVE)
+  designation    String
+  image          String?
+  speciality     String
+  description    String?
+  createdAt      DateTime            @default(now())
+  Avability      Availability[]
+  Appointment    Appointment[]
+  reassignedFrom ReassignedHistory[] @relation("FromDoctor")
+  reassignedTo   ReassignedHistory[] @relation("ToDoctor")
 }
 
 model Availability {
@@ -62,16 +64,30 @@ model Availability {
 }
 
 model Appointment {
-  id        String            @id @default(uuid())
-  patientId String
-  doctorId  String
-  patient   Patient           @relation(fields: [patientId], references: [id])
-  doctor    Doctors           @relation(fields: [doctorId], references: [id])
-  date      DateTime
-  startTime String
-  status    AppointmentStatus @default(PENDING)
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  id                String              @id @default(uuid())
+  patientId         String
+  doctorId          String
+  patient           Patient             @relation(fields: [patientId], references: [id])
+  doctor            Doctors             @relation(fields: [doctorId], references: [id])
+  date              DateTime
+  startTime         String
+  status            AppointmentStatus   @default(PENDING)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  ReassignedHistory ReassignedHistory[]
+}
+
+model ReassignedHistory {
+  id            String      @id @default(uuid())
+  appointmentId String
+  fromDoctorId  String
+  toDoctorId    String
+  reassignedBy  String
+  createdAt     DateTime    @default(now())
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+
+  fromDoctor Doctors @relation("FromDoctor", fields: [fromDoctorId], references: [id])
+  toDoctor   Doctors @relation("ToDoctor", fields: [toDoctorId], references: [id])
 }
 
 enum Role {
@@ -100,4 +116,5 @@ enum AppointmentStatus {
   ACCEPTED
   REJECTED
   COMPLETED
+  REASSIGNED
 }
