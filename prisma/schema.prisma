@@ -33,21 +33,22 @@ model Otp {
 }
 
 model Doctors {
-  id             String              @id @default(uuid())
-  name           String
-  email          String              @unique
-  password       String
-  role           Role                @default(DOCTOR)
-  status         DoctorStatus        @default(INACTIVE)
-  designation    String
-  image          String?
-  speciality     String
-  description    String?
-  createdAt      DateTime            @default(now())
-  Avability      Availability[]
-  Appointment    Appointment[]
-  reassignedFrom ReassignedHistory[] @relation("FromDoctor")
-  reassignedTo   ReassignedHistory[] @relation("ToDoctor")
+  id                String              @id @default(uuid())
+  name              String
+  email             String              @unique
+  password          String
+  role              Role                @default(DOCTOR)
+  status            DoctorStatus        @default(INACTIVE)
+  designation       String
+  image             String?
+  speciality        String
+  description       String?
+  createdAt         DateTime            @default(now())
+  Avability         Availability[]
+  Appointment       Appointment[]
+  reassignedFrom    ReassignedHistory[] @relation("FromDoctor")
+  reassignedTo      ReassignedHistory[] @relation("ToDoctor")
+  DoctorPermissions DoctorPermissions[]
 }
 
 model Availability {
@@ -83,11 +84,29 @@ model ReassignedHistory {
   fromDoctorId  String
   toDoctorId    String
   reassignedBy  String
+  date          DateTime
+  startTime     String
   createdAt     DateTime    @default(now())
   appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  fromDoctor    Doctors     @relation("FromDoctor", fields: [fromDoctorId], references: [id])
+  toDoctor      Doctors     @relation("ToDoctor", fields: [toDoctorId], references: [id])
+}
 
-  fromDoctor Doctors @relation("FromDoctor", fields: [fromDoctorId], references: [id])
-  toDoctor   Doctors @relation("ToDoctor", fields: [toDoctorId], references: [id])
+model Permissions {
+  id                Int                 @id @default(autoincrement())
+  name              String              @unique
+  label             String
+  DoctorPermissions DoctorPermissions[]
+}
+
+model DoctorPermissions {
+  id           Int         @id @default(autoincrement())
+  doctorId     String
+  doctor       Doctors     @relation(fields: [doctorId], references: [id])
+  permissionId Int
+  permission   Permissions @relation(fields: [permissionId], references: [id])
+
+  @@unique([doctorId, permissionId])
 }
 
 enum Role {

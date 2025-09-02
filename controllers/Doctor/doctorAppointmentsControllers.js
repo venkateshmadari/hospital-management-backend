@@ -9,11 +9,11 @@ const getDoctorAppointments = async (req, res, next) => {
         const skip = (pageNumber - 1) * limitNumber;
 
         const whereClause = {}
-        if (role === "ADMIN") {
-            return res.status(401).json({
-                message: "Your are unauthorized"
-            })
-        }
+        // if (role === "ADMIN") {
+        //     return res.status(401).json({
+        //         message: "Your are unauthorized"
+        //     })
+        // }
         if (role === "DOCTOR") {
             whereClause.doctorId = id
         }
@@ -34,7 +34,8 @@ const getDoctorAppointments = async (req, res, next) => {
                 where: whereClause,
                 include: {
                     patient: { select: { id: true, email: true, name: true, image: true, phoneNumber: true } },
-                },
+                    ReassignedHistory: true
+                },  
                 skip,
                 take: limitNumber,
                 orderBy: { date: "desc" },

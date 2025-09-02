@@ -70,16 +70,16 @@ const rejectedAppointments = async (req, res, next) => {
         ...appointment.doctor,
         image: appointment.doctor?.image
           ? `${req.protocol}://${req.get(
-              "host"
-            )}${appointment.doctor.image.replace(/\\/g, "/")}`
+            "host"
+          )}${appointment.doctor.image.replace(/\\/g, "/")}`
           : null,
       },
       patient: {
         ...appointment.patient,
         image: appointment.patient?.image
           ? `${req.protocol}://${req.get(
-              "host"
-            )}${appointment.patient.image.replace(/\\/g, "/")}`
+            "host"
+          )}${appointment.patient.image.replace(/\\/g, "/")}`
           : null,
       },
     }));
@@ -107,29 +107,38 @@ const rejectedAppointments = async (req, res, next) => {
 const reAssignAppointments = async (req, res, next) => {
   try {
     const { id } = req.doctors;
-    const { oldDoctorId, newDoctorId } = req.body;
-    // const reassignAppointment = await prisma.appointment.update({
-    //   where: { id: appointmentId },
-    //   data: {
-    //     doctorId: newDoctorId, // assign to new doctor
-    //     status: "REASSIGNED", // mark globally as reassigned
-    //     reassignmentHistory: {
-    //       create: {
-    //         fromDoctorId: oldDoctorId,
-    //         toDoctorId: newDoctorId,
-    //         reassignedBy: adminId,
-    //       },
-    //     },
-    //   },
-    //   include: {
-    //     patient: true,
-    //     doctor: true,
-    //     reassignmentHistory: true,
-    //   },
-    // });
+    const { appointmentId, oldDoctorId, newDoctorId, date, startTime } = req.body;
+    const reassignAppointment = await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        doctorId: newDoctorId,
+        status: "REASSIGNED",
+        ReassignedHistory: {
+          create: {
+            fromDoctorId: oldDoctorId,
+            toDoctorId: newDoctorId,
+            reassignedBy: id,
+            date: new Date(date),
+            startTime
+          },
+        },
+      },
+      include: {
+        patient: true,
+        doctor: true,
+        ReassignedHistory: true,
+      },
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Appointment reassigned successfully",
+      data: reassignAppointment
+    })
+
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = { rejectedAppointments };
+module.exports = { rejectedAppointments, reAssignAppointments };
