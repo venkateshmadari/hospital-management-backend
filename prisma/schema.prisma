@@ -14,12 +14,15 @@ datasource db {
 }
 
 model Patient {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role     @default(PATIENT)
-  createdAt DateTime @default(now())
+  id          String        @id @default(uuid())
+  name        String
+  email       String        @unique
+  password    String
+  image       String?
+  phoneNumber String?
+  role        Role          @default(PATIENT)
+  createdAt   DateTime      @default(now())
+  Appointment Appointment[]
 }
 
 model Otp {
@@ -30,18 +33,22 @@ model Otp {
 }
 
 model Doctors {
-  id          String         @id @default(uuid())
-  name        String
-  email       String         @unique
-  password    String
-  role        Role           @default(DOCTOR)
-  status      DoctorStatus   @default(INACTIVE)
-  designation String
-  image       String?
-  speciality  String
-  description String?
-  createdAt   DateTime       @default(now())
-  Avability   Availability[]
+  id                String              @id @default(uuid())
+  name              String
+  email             String              @unique
+  password          String
+  role              Role                @default(DOCTOR)
+  status            DoctorStatus        @default(INACTIVE)
+  designation       String
+  image             String?
+  speciality        String
+  description       String?
+  createdAt         DateTime            @default(now())
+  Avability         Availability[]
+  Appointment       Appointment[]
+  reassignedFrom    ReassignedHistory[] @relation("FromDoctor")
+  reassignedTo      ReassignedHistory[] @relation("ToDoctor")
+  DoctorPermissions DoctorPermissions[]
 }
 
 model Availability {
@@ -55,6 +62,51 @@ model Availability {
   breakEndTime   String
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+}
+
+model Appointment {
+  id                String              @id @default(uuid())
+  patientId         String
+  doctorId          String
+  patient           Patient             @relation(fields: [patientId], references: [id])
+  doctor            Doctors             @relation(fields: [doctorId], references: [id])
+  date              DateTime
+  startTime         String
+  status            AppointmentStatus   @default(PENDING)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  ReassignedHistory ReassignedHistory[]
+}
+
+model ReassignedHistory {
+  id            String      @id @default(uuid())
+  appointmentId String
+  fromDoctorId  String
+  toDoctorId    String
+  reassignedBy  String
+  date          DateTime
+  startTime     String
+  createdAt     DateTime    @default(now())
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  fromDoctor    Doctors     @relation("FromDoctor", fields: [fromDoctorId], references: [id])
+  toDoctor      Doctors     @relation("ToDoctor", fields: [toDoctorId], references: [id])
+}
+
+model Permissions {
+  id                Int                 @id @default(autoincrement())
+  name              String              @unique
+  label             String
+  DoctorPermissions DoctorPermissions[]
+}
+
+model DoctorPermissions {
+  id           Int         @id @default(autoincrement())
+  doctorId     String
+  doctor       Doctors     @relation(fields: [doctorId], references: [id])
+  permissionId Int
+  permission   Permissions @relation(fields: [permissionId], references: [id])
+
+  @@unique([doctorId, permissionId])
 }
 
 enum Role {
@@ -72,8 +124,16 @@ enum DayOfWeek {
   Monday
   Tuesday
   Wednesday
-  Thrusday
+  Thursday
   Friday
   Saturday
   Sunday
+}
+
+enum AppointmentStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  REASSIGNED
 }

@@ -1,9 +1,9 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
-const rootRouter = require("./routes/index");
-const authRouter = require("./routes/authRoutes");
-const path = require('path');
+const rootRouter = require("./routes/doctor/index");
+const patientRouter = require("./routes/patient/index");
+const path = require("path");
 
 dotenv.config();
 const app = express();
@@ -11,38 +11,41 @@ const app = express();
 
 
 const allowedOrigins = [
-  'http://localhost:3000', 
-  'http://localhost:5173', 
-  'http://localhost:5174', 
-  'https://your-production-domain.com'
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  "https://your-production-domain.com",
+  "https://hospital-management-website-nine.vercel.app",
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 
-
-app.get('/', (req, res) => {
-  res.send('Welcome to the API');
+app.get("/", (req, res) => {
+  res.send("Welcome to the API");
 });
 
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
-app.use('/v1/admin', rootRouter);
+app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
+app.use("/v1/admin", rootRouter);
 // for web (patients)
-app.use("/v1", authRouter)
+app.use("/v1", patientRouter);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ message: 'Internal Server Error' });
+  res.status(500).json({ message: "Internal Server Error" });
 });
 
 const PORT = process.env.PORT || 5000;

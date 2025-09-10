@@ -1,9 +1,9 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const prisma = require("../utils/prisma");
+const prisma = require("../../utils/prisma");
 const dotenv = require("dotenv");
-const sendMail = require("../utils/email");
-const { otptemplate } = require("../utils/otptemplate");
+const sendMail = require("../../utils/email");
+const { otptemplate } = require("../../utils/otptemplate");
 dotenv.config();
 
 const register = async (req, res, next) => {
@@ -18,8 +18,8 @@ const register = async (req, res, next) => {
     }
 
     const existingPatient = await prisma.patient.findUnique({
-      where: { email }
-    })
+      where: { email },
+    });
     if (existingPatient) {
       return res.status(409).json({
         success: false,
@@ -34,6 +34,7 @@ const register = async (req, res, next) => {
     });
 
     return res.status(201).json({
+      message: "Account registered successfully",
       success: true,
       patient: {
         id: newPatient.id,
@@ -45,7 +46,7 @@ const register = async (req, res, next) => {
     });
   } catch (error) {
     console.error("Registration error:", error);
-    next(error)
+    next(error);
   }
 };
 
@@ -102,6 +103,8 @@ const getUserData = async (req, res, next) => {
         name: true,
         email: true,
         role: true,
+        image: true,
+        phoneNumber: true,
         createdAt: true,
       },
     });
@@ -113,9 +116,19 @@ const getUserData = async (req, res, next) => {
       });
     }
 
+    const formattedPatient = {
+      ...patient,
+      image: patient.image
+        ? `${req.protocol}://${req.get("host")}${patient.image.replace(
+          /\\/g,
+          "/"
+        )}`
+        : null,
+    };
+
     return res.status(200).json({
       success: true,
-      patient,
+      patient: formattedPatient,
     });
   } catch (error) {
     next(error);

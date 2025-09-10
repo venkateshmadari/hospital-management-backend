@@ -1,9 +1,9 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const prisma = require("../utils/prisma");
+const prisma = require("../../utils/prisma");
 const dotenv = require("dotenv");
-const sendMail = require("../utils/email");
-const { otptemplate } = require("../utils/otptemplate");
+const sendMail = require("../../utils/email");
+const { otptemplate } = require("../../utils/otptemplate");
 dotenv.config();
 
 const doctorRegister = async (req, res, next) => {
