@@ -1,6 +1,6 @@
 const prisma = require("../utils/prisma");
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
 const getAllDoctors = async (req, res, next) => {
   try {
@@ -9,7 +9,11 @@ const getAllDoctors = async (req, res, next) => {
     const limitNumber = parseInt(limit);
     const skip = (pageNumber - 1) * limitNumber;
 
-    const where = {};
+    const where = {
+      email: {
+        not: "admin@gmail.com",
+      },
+    };
     if (search) {
       where.OR = [
         { name: { contains: search } },
@@ -62,31 +66,43 @@ const getAllDoctors = async (req, res, next) => {
   }
 };
 
-const getDoctorStats = async () => {
+const getDoctorStats = async (req, res, next) => {
   try {
-    const totalDoctors = await prisma.doctors.count()
+    const totalDoctors = await prisma.doctors.count({
+      where: {
+        email: {
+          not: "admin@gmail.com",
+        },
+      },
+    });
     const activeDoctors = await prisma.doctors.count({
       where: {
-        status: "ACTIVE"
-      }
-    })
+        status: "ACTIVE",
+        email: {
+          not: "admin@gmail.com",
+        },
+      },
+    });
     const inActiveDoctors = await prisma.doctors.count({
       where: {
-        status: "INACTIVE"
-      }
-    })
+        status: "INACTIVE",
+        email: {
+          not: "admin@gmail.com",
+        },
+      },
+    });
     return res.status(200).json({
       status: "success",
       data: {
         totalDoctors,
         activeDoctors,
-        inActiveDoctors
-      }
-    })
+        inActiveDoctors,
+      },
+    });
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
 
 const uploadDoctorImage = async (req, res, next) => {
   try {
@@ -95,30 +111,30 @@ const uploadDoctorImage = async (req, res, next) => {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: "No file uploaded"
+        message: "No file uploaded",
       });
     }
 
     const doctor = await prisma.doctors.findUnique({
-      where: { id: doctorId }
+      where: { id: doctorId },
     });
 
     if (!doctor) {
       fs.unlinkSync(req.file.path);
       return res.status(404).json({
         success: false,
-        message: "Doctor not found"
+        message: "Doctor not found",
       });
     }
 
     if (doctor.image) {
-      const oldImagePath = path.join(__dirname, '../public', doctor.image);
+      const oldImagePath = path.join(__dirname, "../public", doctor.image);
       if (fs.existsSync(oldImagePath)) {
         fs.unlinkSync(oldImagePath);
       }
     }
 
-    const imagePath = path.join('uploads', req.file.filename);
+    const imagePath = `/uploads/${req.file.filename}`;
 
     const updatedDoctor = await prisma.doctors.update({
       where: { id: doctorId },
@@ -127,17 +143,16 @@ const uploadDoctorImage = async (req, res, next) => {
         id: true,
         name: true,
         email: true,
-        image: true
-      }
+        image: true,
+      },
     });
 
     return res.status(200).json({
       success: true,
       data: updatedDoctor,
-      message: "Doctor image uploaded successfully"
+      message: "Doctor image uploaded successfully",
     });
   } catch (error) {
-    // Clean up uploaded file if error occurs
     if (req.file) {
       fs.unlinkSync(req.file.path);
     }
@@ -155,12 +170,13 @@ const getSingleDoctor = async (req, res, next) => {
         name: true,
         email: true,
         role: true,
+        status: true,
         designation: true,
         image: true,
         createdAt: true,
-        specialty: true,
+        speciality: true,
         description: true,
-        Avability: true
+        Avability: true,
       },
     });
     if (!doctor) {
@@ -173,8 +189,11 @@ const getSingleDoctor = async (req, res, next) => {
     const formattedDoctor = {
       ...doctor,
       image: doctor.image
-        ? `${req.protocol}://${req.get('host')}/public/${doctor.image.replace(/\\/g, '/')}`
-        : null
+        ? `${req.protocol}://${req.get("host")}/public/${doctor.image.replace(
+            /\\/g,
+            "/"
+          )}`
+        : null,
     };
 
     return res.status(200).json({
@@ -225,23 +244,38 @@ const doctorAvability = async (req, res, next) => {
   const { doctorId, availabilites } = req.body;
   if (!doctorId) {
     return res.status(400).json({
-      error: "doctorId is missing"
-    })
+      error: "doctorId is missing",
+    });
   }
   if (!Array.isArray(availabilites) || availabilites.length === 0) {
     return res.status(400).json({
-      error: "Availabilites are not in array"
-    })
+      error: "Availabilites are not in array",
+    });
   }
 
-  const validDays = ["Monday", "Tuesday", "Wednesday", "Thrusday", "Friday", "Saturday", "Sunday"]
+  const validDays = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thrusday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
 
   for (const availbility of availabilites) {
     if (!validDays.includes(availbility.day)) {
-      return res.status(400).json({ error: `Invalid day: ${availbility.day}` })
+      return res.status(400).json({ error: `Invalid day: ${availbility.day}` });
     }
-    if (!availbility.startTime || !availbility.endTime || !availbility.breakStartTime || !availbility.breakEndTime) {
-      return res.status(400).json({ error: "startTime, endTime, breakStartTime ,breakEndTime are missing" })
+    if (
+      !availbility.startTime ||
+      !availbility.endTime ||
+      !availbility.breakStartTime ||
+      !availbility.breakEndTime
+    ) {
+      return res.status(400).json({
+        error: "startTime, endTime, breakStartTime ,breakEndTime are missing",
+      });
     }
     const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
 
@@ -251,66 +285,69 @@ const doctorAvability = async (req, res, next) => {
       !timeRegex.test(availbility.breakStartTime) ||
       !timeRegex.test(availbility.breakEndTime)
     ) {
-      return res.status(400).json({ error: 'Invalid time format. Use HH:mm' });
+      return res.status(400).json({ error: "Invalid time format. Use HH:mm" });
     }
   }
   try {
     const doctor = prisma.doctors.findUnique({
       where: {
-        id: doctorId
-      }
-    })
+        id: doctorId,
+      },
+    });
 
     if (!doctor) {
       return res.status(404).json({
-        message: `No doctor found with ${doctorId}`
-      })
+        message: `No doctor found with ${doctorId}`,
+      });
     }
 
     const existingDays = await prisma.availability.findMany({
       where: {
         doctorId,
-        day: { in: availabilites.map(a => a.day) }
+        day: { in: availabilites.map((a) => a.day) },
       },
-      select: { day: true }
-    })
+      select: { day: true },
+    });
 
     if (existingDays.length > 0) {
-      const duplicateDays = existingDays.map(d => d.day);
-      return res.status(409).json({ error: `Availability already exists for days: ${duplicateDays.join(', ')}` });
+      const duplicateDays = existingDays.map((d) => d.day);
+      return res.status(409).json({
+        error: `Availability already exists for days: ${duplicateDays.join(
+          ", "
+        )}`,
+      });
     }
 
     await prisma.availability.createMany({
-      data:
-        availabilites.map(avail => ({
-          doctorId: doctorId,
-          day: avail.day,
-          startTime: avail.startTime,
-          endTime: avail.endTime,
-          breakStartTime: avail.breakStartTime,
-          breakEndTime: avail.breakEndTime
-        }))
-    })
+      data: availabilites.map((avail) => ({
+        doctorId: doctorId,
+        day: avail.day,
+        startTime: avail.startTime,
+        endTime: avail.endTime,
+        breakStartTime: avail.breakStartTime,
+        breakEndTime: avail.breakEndTime,
+      })),
+    });
 
     const newAvailabilities = await prisma.availability.findMany({
       where: {
         doctorId,
         day: {
-          in: availabilites.map(a => a.day)
-        }
-      }
-    })
+          in: availabilites.map((a) => a.day),
+        },
+      },
+    });
 
-    return res.status(201).json({ data: newAvailabilities })
+    return res.status(201).json({ data: newAvailabilities });
+  } catch (error) {
+    next(error);
   }
-  catch (error) {
-    next(error)
-  }
-}
+};
 
 const updateDoctorAvailability = async (req, res, next) => {
   try {
-    const { doctorId, day, startTime, endTime, breakStartTime, breakEndTime } = req.body;
+    const { doctorId, day, startTime, endTime, breakStartTime, breakEndTime } =
+      req.body;
 
     if (!doctorId || !day) {
       return res.status(400).json({ error: "doctorId and day are required" });
@@ -324,14 +361,16 @@ const updateDoctorAvailability = async (req, res, next) => {
       return res.status(400).json({ error: "Invalid or missing endTime" });
     }
     if (!breakStartTime || !timeRegex.test(breakStartTime)) {
-      return res.status(400).json({ error: "Invalid or missing breakStartTime" });
+      return res
+        .status(400)
+        .json({ error: "Invalid or missing breakStartTime" });
     }
     if (!breakEndTime || !timeRegex.test(breakEndTime)) {
       return res.status(400).json({ error: "Invalid or missing breakEndTime" });
     }
 
     const doctor = await prisma.doctors.findUnique({
-      where: { id: doctorId }
+      where: { id: doctorId },
     });
 
     if (!doctor) {
@@ -360,7 +399,7 @@ const updateDoctorAvailability = async (req, res, next) => {
         endTime,
         breakStartTime,
         breakEndTime,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
     });
 
@@ -373,7 +412,6 @@ const updateDoctorAvailability = async (req, res, next) => {
   }
 };
 
-
 module.exports = {
   getAllDoctors,
   getDoctorStats,
@@ -381,5 +419,5 @@ module.exports = {
   getSingleDoctor,
   updatedSingleDoctor,
   doctorAvability,
-  updateDoctorAvailability
+  updateDoctorAvailability,
 };

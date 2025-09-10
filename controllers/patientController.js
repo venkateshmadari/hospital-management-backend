@@ -93,5 +93,5 @@ const updatePatient = async (req, res, next) => {
 module.exports = {
   getAllPatients,
   getPatientById,
-  updatePatient
+  updatePatient,
 };
