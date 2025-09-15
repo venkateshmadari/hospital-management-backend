@@ -110,6 +110,18 @@ const doctorGetUserData = async (req, res, next) => {
         speciality: true,
         status: true,
         Avability: true,
+        DoctorPermissions: {
+          select: {
+            id: true,
+            permission: {
+              select: {
+                id: true,
+                name: true,
+                label: true,
+              }
+            }
+          }
+        }
       },
     });
 
@@ -119,10 +131,15 @@ const doctorGetUserData = async (req, res, next) => {
         message: "User not found",
       });
     }
-
+    const permissions = doctor.DoctorPermissions.map(
+      (dp) => dp.permission
+    );
     return res.status(200).json({
       success: true,
-      user: doctor,
+      user: {
+        ...doctor,
+        permissions
+      },
       role: doctor.role,
     });
   } catch (error) {

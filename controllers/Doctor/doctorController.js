@@ -51,9 +51,9 @@ const getAllDoctors = async (req, res, next) => {
       ...doctor,
       image: doctor.image
         ? `${req.protocol}://${req.get("host")}${doctor.image.replace(
-            /\\/g,
-            "/"
-          )}`
+          /\\/g,
+          "/"
+        )}`
         : null,
     }));
 
@@ -202,9 +202,9 @@ const getSingleDoctor = async (req, res, next) => {
       ...doctor,
       image: doctor.image
         ? `${req.protocol}://${req.get("host")}${doctor.image.replace(
-            /\\/g,
-            "/"
-          )}`
+          /\\/g,
+          "/"
+        )}`
         : null,
     };
 
@@ -257,12 +257,11 @@ const updateDoctorStatus = async (req, res, next) => {
     const { status } = req.body;
     const doctorId = req.params.id;
     const allowedStatuses = ["ACTIVE", "INACTIVE"];
+
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid status. Allowed values are: ${allowedStatuses.join(
-          ", "
-        )}`,
+        message: `Invalid status. Allowed values are: ${allowedStatuses.join(", ")}`,
       });
     }
 
@@ -277,6 +276,9 @@ const updateDoctorStatus = async (req, res, next) => {
       });
     }
 
+    // 🔑 Detect transition from INACTIVE → ACTIVE
+    const isActivating = findDoctor.status === "INACTIVE" && status === "ACTIVE";
+
     const updatedDoctor = await prisma.doctors.update({
       where: { id: doctorId },
       data: { status },
@@ -287,15 +289,50 @@ const updateDoctorStatus = async (req, res, next) => {
       },
     });
 
+    // ✅ Assign default permissions if activating
+    if (isActivating) {
+      const defaultDoctorPerms = [
+        "VIEW_PROFILE",
+        "VIEW_APPOINTMENTS",
+        "EDIT_APPOINTMENTS",
+        "DELETE_APPOINTMENTS",
+      ];
+
+      for (const permName of defaultDoctorPerms) {
+        const perm = await prisma.permissions.findUnique({
+          where: { name: permName },
+        });
+
+        if (perm) {
+          await prisma.doctorPermissions.upsert({
+            where: {
+              doctorId_permissionId: {
+                doctorId: doctorId,
+                permissionId: perm.id,
+              },
+            },
+            update: {},
+            create: {
+              doctorId: doctorId,
+              permissionId: perm.id,
+            },
+          });
+        }
+      }
+    }
+
     return res.status(200).json({
       success: true,
       data: updatedDoctor,
-      message: "Doctor status updated successfully",
+      message: isActivating
+        ? "Doctor activated and default permissions assigned"
+        : "Doctor status updated successfully",
     });
   } catch (error) {
     next(error);
   }
 };
+
 const doctorAvability = async (req, res, next) => {
   try {
     const { doctorId, availabilites } = req.body;

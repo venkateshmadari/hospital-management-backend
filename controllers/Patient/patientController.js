@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const getAllPatients = async (req, res, next) => {
+  console.log("htiing");
   try {
     const { page = 1, limit = 25, search = "" } = req.query;
     const pageNumber = Number(page);
@@ -220,9 +221,9 @@ const updatePatientImage = async (req, res, next) => {
       ...updatedPatient,
       image: updatedPatient.image
         ? `${req.protocol}://${req.get("host")}${updatedPatient.image.replace(
-            /\\/g,
-            "/"
-          )}`
+          /\\/g,
+          "/"
+        )}`
         : null,
     };
 
