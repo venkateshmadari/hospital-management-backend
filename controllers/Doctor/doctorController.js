@@ -45,6 +45,7 @@ const getAllDoctors = async (req, res, next) => {
       orderBy: { createdAt: "desc" },
       skip,
       take: limitNumber,
+
     });
 
     const formattedDoctors = allDoctors.map((doctor) => ({
@@ -172,6 +173,7 @@ const uploadDoctorImage = async (req, res, next) => {
   }
 };
 
+
 const getSingleDoctor = async (req, res, next) => {
   try {
     const id = req.params.id;
@@ -189,6 +191,27 @@ const getSingleDoctor = async (req, res, next) => {
         speciality: true,
         description: true,
         Avability: true,
+        Appointment: {
+          include: {
+            patient: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+                phoneNumber: true
+              }
+            }
+          },
+          orderBy: {
+            createdAt: "desc"
+          }
+        },
+        DoctorPermissions: {
+          include: {
+            permission: true
+          }
+        }
       },
     });
     if (!doctor) {
@@ -198,13 +221,15 @@ const getSingleDoctor = async (req, res, next) => {
       });
     }
 
+    const permissions = doctor.DoctorPermissions.map(
+      (dp) => dp.permission
+    );
+
     const formattedDoctor = {
       ...doctor,
+      DoctorPermissions: permissions,
       image: doctor.image
-        ? `${req.protocol}://${req.get("host")}${doctor.image.replace(
-          /\\/g,
-          "/"
-        )}`
+        ? `${req.protocol}://${req.get("host")}${doctor.image.replace(/\\/g, "/")}`
         : null,
     };
 
