@@ -597,22 +597,21 @@ const deleteDoctorWithAvailability = async (req, res, next) => {
       });
     }
 
-    const [availabilityResult, doctorResult] = await prisma.$transaction([
-      prisma.availability.deleteMany({
+    const [availabilityResult, appointmentResult, reassignedResult, permissionsResult, doctorResult] = await prisma.$transaction([
+      prisma.availability.deleteMany({ where: { doctorId: { in: doctorIds } } }),
+      prisma.appointment.deleteMany({ where: { doctorId: { in: doctorIds } } }),
+      prisma.reassignedHistory.deleteMany({
         where: {
-          doctorId: {
-            in: doctorIds,
-          },
+          OR: [
+            { fromDoctorId: { in: doctorIds } },
+            { toDoctorId: { in: doctorIds } },
+          ],
         },
       }),
-      prisma.doctors.deleteMany({
-        where: {
-          id: {
-            in: doctorIds,
-          },
-        },
-      }),
+      prisma.doctorPermissions.deleteMany({ where: { doctorId: { in: doctorIds } } }),
+      prisma.doctors.deleteMany({ where: { id: { in: doctorIds } } }),
     ]);
+
     return res.status(200).json({
       success: true,
       message: `Successfully deleted ${doctorResult.count} doctor(s) and ${availabilityResult.count} availability records`,

@@ -24,6 +24,7 @@ const getAllPatients = async (req, res, next) => {
         email: true,
         role: true,
         createdAt: true,
+        image: true
       },
       skip,
       take: limitNumber,
@@ -60,7 +61,21 @@ const getPatientById = async (req, res, next) => {
         name: true,
         email: true,
         role: true,
+        image: true,
         createdAt: true,
+        Appointment: {
+          include: {
+            doctor: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                speciality: true,
+                image: true,
+              }
+            }
+          }
+        }
       },
     });
 
@@ -154,6 +169,11 @@ const patientsDelete = async (req, res, next) => {
     }
 
     await prisma.$transaction([
+      prisma.appointment.deleteMany({
+        where: {
+          patientId: { in: patientIds }
+        }
+      }),
       prisma.patient.deleteMany({
         where: {
           id: {

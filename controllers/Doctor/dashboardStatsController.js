@@ -4,7 +4,6 @@ const dashboardStatsCount = async (req, res, next) => {
     try {
         const doctorId = req.doctors?.id;
         const { role } = req.doctors
-        console.log(role, doctorId, "role");
         if (!doctorId) {
             return res.status(401).json({ message: "Unauthorized: Doctor not found" });
         }
