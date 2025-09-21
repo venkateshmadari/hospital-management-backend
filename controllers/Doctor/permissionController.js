@@ -16,6 +16,7 @@ const giveDoctorPermissions = async (req, res, next) => {
             });
         }
 
+        // Find valid permissions
         const foundPermissions = await prisma.permissions.findMany({
             where: {
                 name: { in: permissions },
@@ -29,30 +30,31 @@ const giveDoctorPermissions = async (req, res, next) => {
             });
         }
 
-        for (const perm of foundPermissions) {
-            await prisma.doctorPermissions.upsert({
-                where: {
-                    doctorId_permissionId: {
+        await prisma.doctorPermissions.deleteMany({
+            where: { doctorId: id },
+        });
+
+        const newPerms = await Promise.all(
+            foundPermissions.map((perm) =>
+                prisma.doctorPermissions.create({
+                    data: {
                         doctorId: id,
                         permissionId: perm.id,
                     },
-                },
-                update: {},
-                create: {
-                    doctorId: id,
-                    permissionId: perm.id,
-                },
-            });
-        }
+                })
+            )
+        );
 
         res.status(200).json({
             success: true,
-            message: "Permissions granted successfully",
+            message: "Permissions updated successfully",
+            data: newPerms,
         });
     } catch (error) {
         next(error);
     }
 };
+
 
 const getAllPermissions = async (req, res, next) => {
     try {

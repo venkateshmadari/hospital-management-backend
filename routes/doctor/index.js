@@ -5,6 +5,7 @@ const patientRouter = require("./patientRoutes");
 const appointmentRouter = require("./dotorAppointmentRoute");
 const totalAppointmentRouter = require("./totalAppointmentRoutes");
 const rejectedAppointmentsRouter = require("./rejectedAppointmentRoute");
+const statsRoute = require("./dashboardStatsRoute")
 const permissionRouter = require("./PermissionRoute")
 const doctorAuthMiddleWare = require("../../middleware/doctorAuthMiddleWare");
 
@@ -25,5 +26,5 @@ rootRouter.use(
 rootRouter.use("/doctors", doctorAuthMiddleWare, doctorRouter);
 rootRouter.use("/patients", doctorAuthMiddleWare, patientRouter);
 rootRouter.use("/permission", doctorAuthMiddleWare, permissionRouter);
-
+rootRouter.use("/dashboard", doctorAuthMiddleWare, statsRoute);
 module.exports = rootRouter;
