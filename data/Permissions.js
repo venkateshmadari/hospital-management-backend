@@ -13,5 +13,7 @@ const PERMISSIONS = [
     { name: "VIEW_REJECTED_APPOINTMENTS", label: "View Rejected Appointments" },
     { name: "REASSIGN_REJECTED_APPOINTMENTS", label: "Reassign Rejected Appointments" },
     { name: "DELETE_REJECTED_APPOINTMENTS", label: "Delete Rejected Appointments" },
+    { name: "VIEW_ALL_PERMISSIONS", label: "View All Permissions" },
+    { name: "EDIT_PERMISSIONS", label: "Edit Permissions" },
 ];
 module.exports = { PERMISSIONS }

@@ -25,6 +25,7 @@ const doctorAuthMiddleWare = (req, res, next) => {
             id: decoded.id,
             email: decoded.email,
             role: decoded.role,
+            permissions: decoded.permissions || [],
         };
 
         next();

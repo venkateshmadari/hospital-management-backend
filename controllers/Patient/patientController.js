@@ -220,9 +220,9 @@ const updatePatientImage = async (req, res, next) => {
       ...updatedPatient,
       image: updatedPatient.image
         ? `${req.protocol}://${req.get("host")}${updatedPatient.image.replace(
-            /\\/g,
-            "/"
-          )}`
+          /\\/g,
+          "/"
+        )}`
         : null,
     };
 
