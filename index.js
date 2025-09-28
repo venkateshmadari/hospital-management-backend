@@ -35,7 +35,7 @@ app.use(
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("Welcome to the API");
+  res.send("Welcome to the API testing");
 });
 
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
