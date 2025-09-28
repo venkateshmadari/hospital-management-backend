@@ -3,7 +3,7 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main # Deploy only when pushing to main
+      - main
 
 jobs:
   deploy:
@@ -23,7 +23,7 @@ jobs:
           echo "Commit Author: $AUTHOR_EMAIL"
           echo "AUTHOR_EMAIL=$AUTHOR_EMAIL" >> $GITHUB_ENV
 
-      # 3️⃣ Check authorized user (your email)
+      # 3️⃣ Check authorized user
       - name: Check Authorized Email
         run: |
           if [[ "$AUTHOR_EMAIL" != "venkateshmadari07@gmail.com" ]]; then
@@ -41,12 +41,12 @@ jobs:
       # 5️⃣ Deploy to EC2
       - name: Deploy to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no \
+          ssh -t -o StrictHostKeyChecking=no \
               -o ServerAliveInterval=30 \
               -o ServerAliveCountMax=10 \
               ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             
-            set -e  # Exit immediately if any command fails
+            set -e  # Exit if any command fails
 
             echo "📂 Changing directory..."
             cd /home/ubuntu/hospital-management-backend || { echo "❌ Failed to cd"; exit 1; }
@@ -56,12 +56,12 @@ jobs:
             git reset --hard origin/main
 
             echo "📦 Installing dependencies..."
-            npm ci || { echo "❌ npm install failed"; exit 1; }
+            npm ci --silent || { echo "❌ npm install failed"; exit 1; }
 
-            # Ensure Prisma CLI is available
+            # Ensure Prisma CLI is installed
             if ! npx prisma --version &>/dev/null; then
               echo "🔧 Installing Prisma..."
-              npm install prisma --save-dev || { echo "❌ Prisma install failed"; exit 1; }
+              npm install prisma --save-dev --silent || { echo "❌ Prisma install failed"; exit 1; }
             fi
 
             echo "🛠️ Running Prisma migrations..."
